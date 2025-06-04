@@ -11,14 +11,14 @@ logger = setup_logger(__name__)
 
 class Agent:
     def __init__(self):
-        logger.debug("Initializing agent...")
+        # logger.debug("Initializing agent...")
         self.mcp_client = MCPClient()
         self.llm = LLM()
-        logger.debug("Agent initialized...")
+        # logger.debug("Agent initialized...")
 
     async def start_servers(self):
-        await self.mcp_client.connect_to_server()
-        logger.debug("MCP servers running...")
+        self.search_client, self.summarize_client = await self.mcp_client.connect_to_servers()
+        # logger.debug("MCP servers running...")
     
     async def process_query(self, query: str):
         """Process a query using LLM and MCP servers"""
@@ -70,20 +70,23 @@ class Agent:
         ]
         
         stream_to_cli("Processing query...")
-        logger.debug("Processing query...")
+        # logger.debug("Processing query...")
         # Initial LLM API call
         response = self.llm.generate_response(
             messages=messages,
             tools=tools
         )
-        logger.debug(f"LLM Response: {response}")
+        # logger.debug(f"LLM Response: {response}")
         if tool_calls := response.choices[0].message.tool_calls:
             for tool_call in tool_calls:
                 tool_name = tool_call.function.name
-                logger.debug(f"tool_name: {tool_name}")
+                # logger.debug(f"tool_name: {tool_name}")
                 tool_args = json.loads(tool_call.function.arguments)
-                logger.debug(f"tool_name: {tool_args}")
-                result = await self.mcp_client.invoke_tool(tool_name, tool_args)
+                # logger.debug(f"tool_name: {tool_args}")
+                if tool_name == "pdf_search":
+                    result = await self.mcp_client.invoke_tool(self.search_client, tool_name, tool_args)
+                elif tool_name == "pdf_summarize":
+                    result = await self.mcp_client.invoke_tool(self.summarize_client, tool_name, tool_args)
                 return result
 
         return response.choices[0].message.content

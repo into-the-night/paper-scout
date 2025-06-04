@@ -24,7 +24,7 @@ async def run_cli():
             result = await agent.process_query(user_input)
 
             latency = time.time() - start
-            logger.debug(f"[SUCCESS] Returning LLM response (took {latency}ms): {result}")
+            # logger.debug(f"[SUCCESS] Returning LLM response (took {latency}ms): {result}")
             stream_to_cli(f"[SUCCESS] Returning LLM response (took {latency}ms):")
             stream_to_cli(result)
         except Exception as e:

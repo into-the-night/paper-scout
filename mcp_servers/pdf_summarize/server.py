@@ -6,9 +6,14 @@ import openai
 import traceback
 from typing import Dict
 from fastmcp import FastMCP
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 load_dotenv()
+
+import logging
+logging.getLogger("openai").setLevel(logging.ERROR)
+logging.getLogger("httpx").setLevel(logging.ERROR)
+
 mcp = FastMCP("pdf-summarize")
 
 @mcp.tool()
@@ -50,7 +55,7 @@ def generate_summary(text: str) -> str:
         model = os.getenv("MODEL_NAME")
 
         messages = [
-            {"role": "system", "content": "You are an expert at summarizing PDFs, return a short summary for the following content. Don't generate markdown!"},
+            {"role": "system", "content": "You are an expert at summarizing PDFs, return a short summary for the following content. Do NOT generate markdown!"},
             {"role": "user", "content": text}
         ]
         client = openai.OpenAI(

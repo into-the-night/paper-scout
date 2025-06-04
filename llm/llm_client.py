@@ -2,6 +2,10 @@ import openai
 from typing import List
 from setup.config import Config
 import os
+import logging
+
+logging.getLogger("openai").setLevel(logging.ERROR)
+logging.getLogger("httpx").setLevel(logging.ERROR)
 
 class LLM:
     def __init__(self):

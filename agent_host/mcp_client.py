@@ -6,6 +6,10 @@ from setup.stream_to_cli import stream_to_cli
 from dotenv import load_dotenv
 from fastmcp import Client
 
+import logging
+logging.getLogger("httpcore").setLevel(logging.ERROR)
+logging.getLogger("httpx").setLevel(logging.ERROR)
+
 load_dotenv()  # load environment variables from .env
 file_logger = setup_logger(__name__)
 
@@ -22,41 +26,46 @@ class MCPClient:
     def __init__(self):
         self.llm = LLM()
 
-    async def connect_to_server(self):
+    async def connect_to_servers(self):
         """Connect to the pdf-search MCP server
 
         Args:
             server_script_path: Path to the server script
         """
-        config = {
+        search_config = {
             "mcpServers": {
                 "pdf_search": {
                     "command": "python",
                     "args": ["./mcp_servers/pdf_search/server.py"],
-                },
+                }
+            }
+        }
+        summarize_config = {
+            "mcpServers": {
                 "pdf_summarize": {
                     "command": "python",
                     "args": ["./mcp_servers/pdf_summarize/server.py"],
                 }
             }
         }
-        client = Client(config, log_handler=log_handler)
-        self.client = client
-    
-    async def list_tools(self):
-        async with self.client:
-            tools = await self.client.list_tools()
+        search_client = Client(search_config, log_handler=log_handler)
+        summarize_client = Client(summarize_config, log_handler=log_handler)
+        return search_client, summarize_client
+
+    async def list_tools(self, client: Client):
+        async with client:
+            tools = await client.list_tools()
             return tools
     
-    async def invoke_tool(self, tool_name: str, tool_args: Dict[str, str]) -> Dict[str, str]:
+    async def invoke_tool(self, client: Client, tool_name: str, tool_args: Dict[str, str]) -> Dict[str, str]:
         """Process a query using available tools"""
-        async with self.client:
+        async with client:
             try:
-                file_logger.debug(f"\nClient connected: {self.client.is_connected()}")
                 # Execute tool call
-                file_logger.debug(f"[Calling tool {tool_name} with args {tool_args}]")
+                # file_logger.debug(f"\nClient connected: {client.is_connected()}")
+                # file_logger.debug(f"[Calling tool {tool_name} with args {tool_args}]")
                 stream_to_cli(f"[Calling tool {tool_name} with args {tool_args}]")
-                result = await self.client.call_tool(tool_name, tool_args)
-                return result.text
+                result = await client.call_tool(tool_name, tool_args)
+                return result[0].text
             except Exception as e:
-                file_logger.error(f"Error invoking tools: {e}")
+                stream_to_cli(f"[ERROR] Error invoking tools: {e}")
