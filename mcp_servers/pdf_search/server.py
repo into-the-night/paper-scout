@@ -1,45 +1,41 @@
 from typing import Dict
-import httpx
-import xml.etree.ElementTree as ET
 from fastmcp import FastMCP
+import arxiv
 
-ARXIV_API_URL = "http://export.arxiv.org/api/query"
+arxiv_client = arxiv.Client()
 mcp = FastMCP("paper-search")
 
 @mcp.tool()
-async def paper_search(query: str, max_results: int) -> Dict[str, str]:
-    params = {
-        "search_query": query,
-        "start": 0,
-        "max_results": max_results
-    }
-    async with httpx.AsyncClient() as client:
-        response = await client.get(ARXIV_API_URL, params=params)
-        papers = parse_arxiv_response(response.text)
-    return {"results": papers}
+async def pdf_search(query: str, max_results: int) -> Dict[str, str]:
+    try:
+        search = arxiv.Search(
+            query = query,
+            max_results = int(max_results),
+            sort_by = arxiv.SortCriterion.SubmittedDate
+        )
+        results = arxiv_client.results(search)
+        papers = parse_arxiv_response(results)
+        return {"results": papers}
+    
+    except Exception as e:
+        return {"error": "An error occured while searching papers"}
 
 
-def parse_arxiv_response(xml_text: str):
+
+def parse_arxiv_response(results):
     """Parse arXiv responses to required format"""
+    results = list(results)
+    formatted_results = []
 
-    root = ET.fromstring(xml_text)
-    ns = {'arxiv': 'http://arxiv.org/schemas/atom'}
-    results = []
-
-    for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
-        title = entry.find('{http://www.w3.org/2005/Atom}title').text.strip()
-        summary = entry.find('{http://www.w3.org/2005/Atom}summary').text.strip()
-        url = entry.find('{http://www.w3.org/2005/Atom}id').text.strip()
-        authors = [author.find('{http://www.w3.org/2005/Atom}name').text
-                   for author in entry.findall('{http://www.w3.org/2005/Atom}author')]
-        results.append({
-            "title": title,
-            "summary": summary,
-            "url": url,
-            "authors": authors
+    for result in results:
+        formatted_results.append({
+            "title": result.title,
+            "summary": result.summary,
+            "url": result.pdf_url if hasattr(result, "pdf_url") else result.entry_id,
+            "authors": result.authors
         })
 
-    return results
+    return formatted_results
 
 if __name__ == "__main__":
     mcp.run()

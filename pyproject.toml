@@ -9,10 +9,11 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 mcp = {extras = ["cli"], version = "^1.9.2"}
-litellm = "^1.72.0"
 python-dotenv = "^1.1.0"
 pymupdf = "^1.26.0"
 fastmcp = "^2.6.0"
+arxiv = "^2.2.0"
+openai = "^1.84.0"
 
 
 [build-system]
