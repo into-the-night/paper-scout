@@ -12,23 +12,17 @@ class Agent:
     def __init__(self):
         print("Initializing agent...")
 
-        base_dir = Path(__file__).resolve().parent.parent  # Go up one level from agent_host
-        search_server_path = base_dir / "mcp_servers" / "pdf_search" / "server.py"
-        self.search_mcp = MCPClient(str(search_server_path))
-        summary_server_path = base_dir / "mcp_servers" / "pdf_summarize" / "server.py"
-        self.summary_mcp = MCPClient(str(summary_server_path))
+        self.mcp_client = MCPClient()
         self.llm = LLM()
-
         print("Agent initialized...")
 
     async def start_servers(self):
-        await self.search_mcp.connect_to_server()
-        await self.summary_mcp.connect_to_server()
-
-        print("MCP servers running")
+        print("MCP servers running...")
     
     async def process_query(self, query: str):
         """Process a query using LLM and MCP servers"""
+        await self.mcp_client.connect_to_server()
+
 
         messages = [
             {
@@ -78,14 +72,13 @@ class Agent:
             messages=messages,
             tools=tools
         )
+        logger.info(f"Returning LLM response {response}")
 
-        for tool_call in response.choices[0].message.tool_calls:
-            name = tool_call.function.name
-            args = json.loads(tool_call.function.arguments)
-            if name == "pdf_search":
-                result = await self.search_mcp.invoke_tool(tool_args=args)
-            elif name == "pdf_summarize":
-                result = await self.summary_mcp.invoke_tool(tool_args=args)
-            return result
-        
+        if tool_calls := response.choices[0].message.tool_calls:
+            for tool_call in tool_calls:
+                tool_name = tool_call.function.name
+                tool_args = json.loads(tool_call.function.arguments)
+                result = await self.mcp_client.invoke_tool(tool_name, tool_args)
+                return result
+
         return response.choices[0].message.content

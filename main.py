@@ -35,13 +35,13 @@ async def run_cli():
             latency = time.time() - start
             print(f"[SUCCESS] Returning LLM response (took {latency}ms):")
 
-            for chunk in result:
-                if chunk.choices[0].delta.content is not None:
-                    print(chunk.choices[0].delta.content, end="")
-
+            # for chunk in result:
+            #     if chunk.choices[0].delta.content is not None:
+            #         print(chunk.choices[0].delta.content, end="")
+            print(result)
         except Exception as e:
             latency = time.time() - start
-            print(f"[ERROR] LLM response failed (took {latency}ms)")
+            print(f"[ERROR] LLM response failed (took {latency}ms) with error {e}")
 
 if __name__ == "__main__":
     asyncio.run(run_cli())

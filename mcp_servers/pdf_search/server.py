@@ -3,7 +3,7 @@ from fastmcp import FastMCP
 import arxiv
 
 arxiv_client = arxiv.Client()
-mcp = FastMCP("paper-search")
+mcp = FastMCP("pdf_search")
 
 @mcp.tool()
 async def pdf_search(query: str, max_results: int) -> Dict[str, str]:
@@ -19,7 +19,6 @@ async def pdf_search(query: str, max_results: int) -> Dict[str, str]:
     
     except Exception as e:
         return {"error": "An error occured while searching papers"}
-
 
 
 def parse_arxiv_response(results):
@@ -38,6 +37,4 @@ def parse_arxiv_response(results):
     return formatted_results
 
 if __name__ == "__main__":
-    mcp.run()
-
-
+    mcp.run(transport="stdio")

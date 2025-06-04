@@ -1,24 +1,24 @@
 import asyncio
 from typing import Optional, Dict
-from contextlib import AsyncExitStack
-
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
-
 from llm.llm_client import LLM
 from setup.logging_config import setup_logger
 from dotenv import load_dotenv
+from fastmcp import Client
 
 load_dotenv()  # load environment variables from .env
-logger = setup_logger(__name__)
+file_logger = setup_logger(__name__)
+
+from fastmcp.client.logging import LogMessage
+
+async def log_handler(message: LogMessage):
+    level = message.level.upper()
+    logger = message.logger or 'default'
+    data = message.data
+    file_logger.info(f"[Server Log - {level}] {logger}: {data}")
 
 
 class MCPClient:
-    def __init__(self, server_script_path: str):
-        # Initialize session and client objects
-        self.session: Optional[ClientSession] = None
-        self.exit_stack = AsyncExitStack()
-        self.server_script_path = server_script_path
+    def __init__(self):
         self.llm = LLM()
 
     async def connect_to_server(self):
@@ -27,34 +27,37 @@ class MCPClient:
         Args:
             server_script_path: Path to the server script
         """
-        command = "python"
-        server_params = StdioServerParameters(
-            command=command,
-            args=[self.server_script_path],
-            env=None
-        )
-
-        stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
-        self.stdio, self.write = stdio_transport
-        self.session = await self.exit_stack.enter_async_context(ClientSession(self.stdio, self.write))
-
-        await self.session.initialize()
-
-        # List available tools
-        response = await self.session.list_tools()
-        tools = response.tools
-        logger.info(f"\nConnected to server with tools:{[tool.name for tool in tools]}")
-
+        config = {
+            "mcpServers": {
+                "pdf_search": {
+                    "command": "python",
+                    "args": ["./mcp_servers/pdf_search/server.py"],
+                },
+                "pdf_summarize": {
+                    "command": "python",
+                    "args": ["./mcp_servers/pdf_summarize/server.py"],
+                }
+            }
+        }
+        client = Client(config, log_handler=log_handler)
+        self.client = client
+        # file_logger.info(f"\nClient connected: {client.is_connected()}")
+        # return client
     
-    async def invoke_tool(self, tool_args: Dict[str, str]) -> Dict[str, str]:
+    async def list_tools(self):
+        async with self.client:
+            tools = await self.client.list_tools()
+            return tools
+    
+    async def invoke_tool(self, tool_name: str, tool_args: Dict[str, str]) -> Dict[str, str]:
         """Process a query using available tools"""
-
-        tool_names = await self.session.list_tools()
-        tool_name = tool_names.tools[0].name
-
-        # Execute tool call
-        logger.info(f"[Calling tool {tool_name} with args {tool_args}]")
-        result = await self.session.call_tool(tool_names.tools[0].name, tool_args)
-        logger.info(f"Tool Result: {result}")
-
-        return result.content
+        async with self.client:
+            try:
+                file_logger.info(f"\nClient connected: {self.client.is_connected()}")
+                # Execute tool call
+                file_logger.info(f"[Calling tool {tool_name} with args {tool_args}]")
+                result = await self.client.call_tool(tool_name, tool_args)
+                file_logger.info(f"Tool Result: {result.text}")
+                return result.text
+            except Exception as e:
+                file_logger.error(f"Error invoking tools: {e}")
