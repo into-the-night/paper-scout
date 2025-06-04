@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional, Dict
 from llm.llm_client import LLM
 from setup.logging_config import setup_logger
+from setup.stream_to_cli import stream_to_cli
 from dotenv import load_dotenv
 from fastmcp import Client
 
@@ -41,8 +42,6 @@ class MCPClient:
         }
         client = Client(config, log_handler=log_handler)
         self.client = client
-        # file_logger.info(f"\nClient connected: {client.is_connected()}")
-        # return client
     
     async def list_tools(self):
         async with self.client:
@@ -53,11 +52,11 @@ class MCPClient:
         """Process a query using available tools"""
         async with self.client:
             try:
-                file_logger.info(f"\nClient connected: {self.client.is_connected()}")
+                file_logger.debug(f"\nClient connected: {self.client.is_connected()}")
                 # Execute tool call
-                file_logger.info(f"[Calling tool {tool_name} with args {tool_args}]")
+                file_logger.debug(f"[Calling tool {tool_name} with args {tool_args}]")
+                stream_to_cli(f"[Calling tool {tool_name} with args {tool_args}]")
                 result = await self.client.call_tool(tool_name, tool_args)
-                file_logger.info(f"Tool Result: {result.text}")
                 return result.text
             except Exception as e:
                 file_logger.error(f"Error invoking tools: {e}")

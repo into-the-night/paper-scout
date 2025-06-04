@@ -3,19 +3,10 @@ import json
 import asyncio
 from datetime import datetime
 from setup.logging_config import setup_logger
+from setup.stream_to_cli import stream_to_cli
 from agent_host.agent import Agent
 
 logger = setup_logger(__name__)
-
-def log_tool_call(tool_name, args, latency, status):
-    log = {
-        "tool": tool_name,
-        "args": args,
-        "timestamp": datetime.utcnow().isoformat(),
-        "duration": f"{latency:.2f}s",
-        "status": status
-    }
-    print(f"[TOOL CALL] {json.dumps(log, indent=2)}")
 
 async def run_cli():
     print("📚 Scientific-Paper Scout CLI — type 'exit' to quit")
@@ -33,15 +24,12 @@ async def run_cli():
             result = await agent.process_query(user_input)
 
             latency = time.time() - start
-            print(f"[SUCCESS] Returning LLM response (took {latency}ms):")
-
-            # for chunk in result:
-            #     if chunk.choices[0].delta.content is not None:
-            #         print(chunk.choices[0].delta.content, end="")
-            print(result)
+            logger.debug(f"[SUCCESS] Returning LLM response (took {latency}ms): {result}")
+            stream_to_cli(f"[SUCCESS] Returning LLM response (took {latency}ms):")
+            stream_to_cli(result)
         except Exception as e:
             latency = time.time() - start
-            print(f"[ERROR] LLM response failed (took {latency}ms) with error {e}")
+            stream_to_cli(f"[ERROR] LLM response failed (took {latency}ms) with error {e}")
 
 if __name__ == "__main__":
     asyncio.run(run_cli())

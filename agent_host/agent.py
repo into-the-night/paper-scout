@@ -3,6 +3,7 @@ import time
 import json
 from pathlib import Path
 from setup.logging_config import setup_logger
+from setup.stream_to_cli import stream_to_cli
 from .mcp_client import MCPClient
 from llm.llm_client import LLM
 
@@ -10,21 +11,23 @@ logger = setup_logger(__name__)
 
 class Agent:
     def __init__(self):
-        print("Initializing agent...")
-
+        logger.debug("Initializing agent...")
         self.mcp_client = MCPClient()
         self.llm = LLM()
-        print("Agent initialized...")
+        logger.debug("Agent initialized...")
 
     async def start_servers(self):
-        print("MCP servers running...")
+        await self.mcp_client.connect_to_server()
+        logger.debug("MCP servers running...")
     
     async def process_query(self, query: str):
         """Process a query using LLM and MCP servers"""
-        await self.mcp_client.connect_to_server()
-
 
         messages = [
+            {
+                "role": "system",
+                "content": "You are expect at answer and routing requests to the MCP tools. Note: YOU MUST stick to the tool schema! It must be a proper JSON as specificied."
+            },
             {
                 "role": "user",
                 "content": query
@@ -66,18 +69,20 @@ class Agent:
             }
         ]
         
-        logger.info("Processing query...")
+        stream_to_cli("Processing query...")
+        logger.debug("Processing query...")
         # Initial LLM API call
         response = self.llm.generate_response(
             messages=messages,
             tools=tools
         )
-        logger.info(f"Returning LLM response {response}")
-
+        logger.debug(f"LLM Response: {response}")
         if tool_calls := response.choices[0].message.tool_calls:
             for tool_call in tool_calls:
                 tool_name = tool_call.function.name
+                logger.debug(f"tool_name: {tool_name}")
                 tool_args = json.loads(tool_call.function.arguments)
+                logger.debug(f"tool_name: {tool_args}")
                 result = await self.mcp_client.invoke_tool(tool_name, tool_args)
                 return result
 
