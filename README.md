@@ -27,41 +27,63 @@ Scout scientific papers from just a simple prompt!
 
 ### 1. Clone the Repository
 
-```sh
-    git clone https://github.com/yourusername/paper-scout.git
-    cd paper-scout
+```bash
+git clone https://github.com/yourusername/paper-scout.git
+cd paper-scout
 ```
 
 ### 2. Install Dependencies
 
-```sh
-    poetry install
+```bash
+poetry install
 ```
 
-### 3. Install Dependencies [MCP Servers]
+### 3. Install MCP Server Dependencies
 
-```sh
-    cd .\mcp_servers\pdf_search
-    uv install
-    cd ..
-    cd ..
-    cd .\mcp_servers\pdf_summarize
-    uv install
+#### Linux/macOS:
+```bash
+# Install pdf_search server dependencies
+(cd mcp_servers/pdf_search && uv install)
+
+# Install pdf_summarize server dependencies  
+(cd mcp_servers/pdf_summarize && uv install)
+```
+
+#### Windows (PowerShell):
+```powershell
+# Install pdf_search server dependencies
+Push-Location mcp_servers\pdf_search; uv install; Pop-Location
+
+# Install pdf_summarize server dependencies
+Push-Location mcp_servers\pdf_summarize; uv install; Pop-Location
+```
+
+#### Windows (Command Prompt):
+```cmd
+# Install pdf_search server dependencies
+cd mcp_servers\pdf_search && uv install && cd ..\..
+
+# Install pdf_summarize server dependencies
+cd mcp_servers\pdf_summarize && uv install && cd ..\..
 ```
 
 ### 4. Set Up Environment Variables
 
-Create a `.env` file in repo directory and `\mcp_servers\pdf_summarize\`:
-```
-    MODEL_NAME=YOUR-MODEL-NAME
-    OPENROUTER_API_KEY=YOUR-OPENROUTER-API-KEY
+Create `.env` files in the following locations:
+- Root directory: `paper-scout/.env`
+- PDF summarize server: `paper-scout/mcp_servers/pdf_summarize/.env`
+
+Add the following variables to both files:
+```env
+MODEL_NAME=YOUR-MODEL-NAME
+OPENROUTER_API_KEY=YOUR-OPENROUTER-API-KEY
 ```
 
 ### 5. Run the CLI
 
-From the repo directory,
-```sh
-    python main.py
+From the repository root directory:
+```bash
+python main.py
 ```
 
 ### 6. Ask away!
