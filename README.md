@@ -16,10 +16,7 @@ Scout scientific papers from just a simple prompt!
   Uses OpenRouter and OpenAI-compatible LLMs to intelligently route your queries to the right tool.
 
 - **Streaming CLI Output:**  
-  See results streamed live in your terminal.
-
-- **Modular MCP Tooling:**  
-  Easily extend or add new tools using the [Model Context Protocol (MCP)](https://github.com/modelcontextprotocol/specification).
+  See results streamed to your terminal.
 
 ---
 
